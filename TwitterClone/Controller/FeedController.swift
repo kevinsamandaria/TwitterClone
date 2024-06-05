@@ -39,8 +39,19 @@ class FeedController: UICollectionViewController {
     
     // -MARK: API
     func fetchTweet() {
-        TweetService.shared.fetchTweet { tweet in
-            self.tweets = tweet
+        TweetService.shared.fetchTweet { tweets in
+            self.tweets = tweets
+            self.checkIfUserLikedTweets(tweets)
+        }
+    }
+    
+    func checkIfUserLikedTweets(_ tweets: [Tweet]) {
+        for (index, tweet) in tweets.enumerated() {
+            TweetService.shared.checkIfUserLikedTweet(tweet) { didlike in
+                guard didlike == true else { return }
+                
+                self.tweets[index].didlike = true
+            }
         }
     }
     
@@ -120,6 +131,17 @@ extension FeedController: TweetCellDelegate {
         
         let controller = ProfileController(user: user)
         navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    func handleLikeTap(_ cell: TweetCell) {
+        guard var tweet = cell.tweet else { return }
+        
+        TweetService.shared.likeTweet(tweet: tweet) { err, ref in
+            cell.tweet?.didlike.toggle()
+            
+            let likes  = tweet.didlike ? tweet.likes - 1 : tweet.likes + 1
+            cell.tweet?.likes  = likes
+        }
     }
 }
  
